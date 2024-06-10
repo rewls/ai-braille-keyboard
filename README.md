@@ -18,7 +18,7 @@ $ python -m pip install google-generativeai
 수동 설치
 https://pypi.org/project/hangul-utils/#description
 
-change setup.py - install_requires 함수
+change setup.py - install_requires 함수 일부 주석 처리
 ```
  install_requires=[
         "tqdm",

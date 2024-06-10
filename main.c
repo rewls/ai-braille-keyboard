@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 #include "library/braille.h"
+#include "library/call-python.h"
 
 #define SW1 8
 #define SW2 9
@@ -13,6 +16,7 @@
 #define SW5 2
 #define SW6 3
 #define sw_send 21
+#define RECOMMEND 16
 #define debounce_time 200
 
 int list[6] = { 0, };
@@ -69,6 +73,16 @@ void callback_func2(void)
 		{
 			list[i] = 0;
 		}
+	}
+}
+
+void call_recommend_word(void)
+{
+	int interruptTime = millis();
+	if (interruptTime - lastInterruptTime > debounce_time) {
+		char **word_list = call_recommend_word("안");
+		for (int i = 0; i < NUM_WORD; i++)
+			printf("%s\n", word_list[i]);
 	}
 }
 

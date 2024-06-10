@@ -2,7 +2,6 @@
 #include <Python.h>
 #include "call-python.h"
 
-
 char **call_recommend_word(char *argument)
 {
 	char *pythonfile = "word_recommendation";
@@ -52,6 +51,75 @@ char **call_recommend_word(char *argument)
 					Py_DECREF(pWord);
 				}
 				return word_list;
+			}
+			else {
+				Py_DECREF(pFunc);
+				Py_DECREF(pModule);
+				PyErr_Print();
+				fprintf(stderr,"Call failed\n");
+				return NULL;
+			}
+		}
+		else {
+			if (PyErr_Occurred())
+				PyErr_Print();
+			fprintf(stderr, "Cannot find function \"%s\"\n", funcname);
+		}
+		Py_XDECREF(pFunc);
+		Py_DECREF(pModule);
+	}
+	else {
+		PyErr_Print();
+		fprintf(stderr, "Failed to load \"%s\"\n", pythonfile);
+		return NULL;
+	}
+	if (Py_FinalizeEx() < 0) {
+		return NULL;
+	}
+	return NULL;
+}
+
+char *call_correct_spelling(char *argument)
+{
+	char *pythonfile = "spell_suggestion";
+	char *funcname = "correct_spelling";
+	PyObject *pName, *pModule, *pFunc;
+	PyObject *pArgs, *pValue;
+	char *word;
+	int i;
+
+	word = malloc(MAX_LEN);
+
+	Py_Initialize();
+	pName = PyUnicode_FromString(pythonfile);
+	/* Error checking of pName left out */
+
+	pModule = PyImport_Import(pName);
+	Py_DECREF(pName);
+
+	if (pModule != NULL) {
+		pFunc = PyObject_GetAttrString(pModule, funcname);
+		/* pFunc is a new reference */
+
+		if (pFunc && PyCallable_Check(pFunc)) {
+			pArgs = PyTuple_New(1);
+			for (i = 0; i < 1; ++i) {
+
+				pValue = PyUnicode_FromString(argument);
+				if (!pValue) {
+					Py_DECREF(pArgs);
+					Py_DECREF(pModule);
+					fprintf(stderr, "Cannot convert argument\n");
+					return NULL;
+				}
+				/* pValue reference stolen here: */
+				PyTuple_SetItem(pArgs, i, pValue);
+			}
+			pValue = PyObject_CallObject(pFunc, pArgs);
+			Py_DECREF(pArgs);
+			if (pValue != NULL) {
+				word = PyUnicode_AsUTF8(pValue);
+				return word;
 			}
 			else {
 				Py_DECREF(pFunc);

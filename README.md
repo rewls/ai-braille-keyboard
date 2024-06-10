@@ -2,9 +2,7 @@
 
 ## Requirement
 
-- google-generativeai pakage 설치
-
-- Google Gemini API key
+### 단어 추천
 
 ```shell
 $ python -m venv .venv
@@ -13,7 +11,12 @@ $ export GOOGLE_API_KEY=<google-api-key>
 $ python -m pip install google-generativeai
 ```
 
-## Install hangul_utils
+## 오타 교정
+
+```shell
+$ python -m pip install pandas hangul-utils
+```
+
 - 자모 분해를 위한 hangul_utils 설치 시 오류 발생
 - 수동 설치 : https://pypi.org/project/hangul-utils/#description
 

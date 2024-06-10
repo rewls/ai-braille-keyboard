@@ -18,9 +18,6 @@ vocab['term'] = vocab['term'].map(safe_split_syllables)
 # 분해된 결과 저장
 vocab.to_csv("ko_50k_decomposed.txt", sep=" ", header=None, index=None, encoding='utf-8')
 
-# 결과 출력
-print(vocab.head())
-
 # SymSpell 초기화
 sym_spell = SymSpell(max_dictionary_edit_distance=2)
 

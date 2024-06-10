@@ -14,8 +14,8 @@ $ python -m pip install google-generativeai
 ```
 
 ## Install hangul_utils
-자모 분해를 위한 hangul_utils 설치 시 오류 발생
-수동 설치 : https://pypi.org/project/hangul-utils/#description
+- 자모 분해를 위한 hangul_utils 설치 시 오류 발생
+- 수동 설치 : https://pypi.org/project/hangul-utils/#description
 
 change setup.py - install_requires 함수 일부 주석 처리
 ```

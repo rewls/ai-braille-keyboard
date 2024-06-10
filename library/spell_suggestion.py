@@ -19,7 +19,7 @@ def correct_spelling(user_input, input_file="ko_50k.txt", output_file="ko_50k_de
     # SymSpell 초기화 및 사전 로드
     sym_spell = SymSpell(max_dictionary_edit_distance=2)
     with open(output_file, 'r', encoding='utf-8') as file:
-        sym_spell.load_dictionary_stream(file, term_index=0, count_index=1)
+        sym_spell._load_dictionary_stream(file, term_index=0, count_index=1)
 
     # 오타 교정 제안
     term_decomposed = split_syllables(user_input)

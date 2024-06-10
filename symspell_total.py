@@ -26,7 +26,7 @@ dictionary_path = "ko_50k_decomposed.txt"
 
 # 파일을 utf-8 인코딩으로 읽기
 with open(dictionary_path, 'r', encoding='utf-8') as file:
-    sym_spell.load_dictionary_stream(file, term_index=0, count_index=1)
+    sym_spell._load_dictionary_stream(file, term_index=0, count_index=1)
 
 # 사용자 입력 받기
 term = input("철자 교정을 원하는 단어를 입력하세요: ")

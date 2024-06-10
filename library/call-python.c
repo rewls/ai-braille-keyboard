@@ -79,7 +79,7 @@ char **call_recommend_word(char *argument)
 	return NULL;
 }
 
-char *call_correct_spelling(char *argument)
+char *call_correct_spelling(wchar_t *argument)
 {
 	char *pythonfile = "spell_suggestion";
 	char *funcname = "correct_spelling";
@@ -105,7 +105,7 @@ char *call_correct_spelling(char *argument)
 			pArgs = PyTuple_New(1);
 			for (i = 0; i < 1; ++i) {
 
-				pValue = PyUnicode_FromString(argument);
+				pValue = PyUnicode_FromWideChar(argument, -1);
 				if (!pValue) {
 					Py_DECREF(pArgs);
 					Py_DECREF(pModule);
@@ -147,3 +147,4 @@ char *call_correct_spelling(char *argument)
 	}
 	return NULL;
 }
+

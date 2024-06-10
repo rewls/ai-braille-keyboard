@@ -15,7 +15,7 @@
 #define SW4 0
 #define SW5 2
 #define SW6 22
-#define sw_send 21
+#define sw_send 23
 #define RECOMMEND 16
 #define debounce_time 200
 
@@ -24,6 +24,8 @@ void callback_func1(void);
 void callback_func2(void);
 
 volatile int lastInterruptTime = 0;
+static wchar_t buf[1000] = L"";
+static wchar_t word[1000] = L"";
 
 void callback_func1(void)
 {
@@ -61,31 +63,42 @@ void callback_func2(void)
 
 	if (interruptTime - lastInterruptTime > debounce_time)
 	{
+		lastInterruptTime = interruptTime;
 
 		for (i = 0; i < 6; i++)
 		{
 			braille += list[i] * pow(2, i);
 		}
 		printf("send word : %d\n", braille);
-		b2k(braille);
-		delay(100);
+		b2k(braille,buf,word);
+		
 		for (i = 0; i < 6; i++)
 		{
 			list[i] = 0;
 		}
+		if (braille == 0)
+			printf("correct word : %s\n", call_correct_spelling(word));
+
+		delay(200);
 	}
 }
 
 void callback_recommend_word(void)
 {
 	int interruptTime = millis();
-	if (interruptTime - lastInterruptTime > debounce_time) {
+	if (interruptTime - lastInterruptTime > debounce_time) 
+	{
+		
+		lastInterruptTime = interruptTime;
+		printf("recommend...\n");
 		char **word_list = call_recommend_word("안");
 		for (int i = 0; i < NUM_WORD; i++) {
 			printf("%s\n", word_list[i]);
 			free(word_list[i]);
 		}
 		free(word_list);
+
+		delay(100);
 	}
 }
 

@@ -5,6 +5,6 @@
 #define MAX_LEN 100
 
 char **call_recommend_word(char *argument);
-char *call_correct_spelling(char *argument);
+char *call_correct_spelling(wchar_t *argument);
 
 #endif

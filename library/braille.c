@@ -5,10 +5,10 @@
 static int pre_br = 0;
 static int cur_br = 0;
 static int flag_table[4] = { 0,0,0,0 };
-static int i = 0;
+static int buf_cnt = 0;
+static int word_cnt = 0;
 static int cjj[] = { -1, -1, 0 };
 static wchar_t cho, jung, jong, ret;
-static wchar_t buf[1000] = L"";
 
 wchar_t br2kor(void)
 {
@@ -78,7 +78,7 @@ wchar_t br2kor(void)
 	return kor_table[cur_br][j];
 }
 
-void b2k(int braille)
+void b2k(int braille, wchar_t* buf, wchar_t* word)
 {
 	setlocale(LC_ALL, "");
 
@@ -95,14 +95,16 @@ void b2k(int braille)
 		//printf("1\n");
 		if (cjj[1] != -1)
 		{
-			buf[++i] = ret;
+			buf[++buf_cnt] = ret;
+			word[++word_cnt] = ret;
 			cjj[0] = cho;
 			cjj[1] = jung;
 			cjj[2] = jong;
 		}
 		else if (cjj[0] != -1)
 		{
-			buf[i] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
+			buf[buf_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
+			word[word_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
 			cjj[1] = jung;
 			cjj[2] = jong;
 		}
@@ -114,9 +116,9 @@ void b2k(int braille)
 	}
 	else if (flag_table[1] == 1)
 	{
-		if (!(buf[i] >= 0x1100 && buf[i] <= 0x11FF))
+		if (!(buf[buf_cnt] >= 0x1100 && buf[buf_cnt] <= 0x11FF))
 		{
-			i++;
+			buf_cnt++;
 			cjj[0] = 0x110b - 0x1100;
 			cjj[2] = 0;
 			//printf("3_2\n");
@@ -126,21 +128,31 @@ void b2k(int braille)
 	}
 	else if (flag_table[0] == 1)
 	{
-		if (buf[i] >= 0x1100 && buf[i] <= 0x1112)
+		if (buf[buf_cnt] >= 0x1100 && buf[buf_cnt] <= 0x1112)
 		{
-			buf[i] = cjj[0] * 21 * 28 + 0xac00;
+			buf[buf_cnt] = cjj[0] * 21 * 28 + 0xac00;
 		}
 		cjj[0] = ret - 0x1100;
 		cjj[1] = -1;
 		cjj[2] = 0;
-		buf[++i] = ret;
+		buf[++buf_cnt] = ret;
+		word[++word_cnt] = ret;
 		//printf("4\n");
 	}
 
-	if (cjj[1] != -1)
-		buf[i] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
-
+	if (cjj[1] != -1){
+		buf[buf_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
+		word[word_cnt] = buf[buf_cnt];
+	}
+	
+	if (braille == 0)
+	{	
+		word[++word_cnt] = '\0';
+		word_cnt = 0;
+		buf[++buf_cnt] = ret;
+	}
 	printf("output : %lc\n", ret);
 	printf("output : %S\n", buf + 1);
+
 }
 

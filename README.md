@@ -7,7 +7,8 @@
 - Google Gemini API key
 
 ```shell
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install google-generativeai
+$ python -m venv .venv
+$ source .venv/bin/activate
+$ export GOOGLE_API_KEY=<google-api-key>
+$ python -m pip install google-generativeai
 ```

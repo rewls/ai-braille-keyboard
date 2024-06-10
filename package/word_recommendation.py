@@ -3,8 +3,8 @@ import os
 
 os.environ["GRPC_DNS_RESOLVER"] = "native"
 
-api_key = ""
-genai.configure(api_key=api_key)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+genai.configure(api_key=GOOGLE_API_KEY)
 
 generation_config = {
         "candidate_count": 1,

@@ -1,8 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include "call-python.h"
 
-#define NUM_WORD 3
-#define MAX_LEN 100
 
 char **call_recommend_word(char *argument)
 {
@@ -79,12 +78,4 @@ char **call_recommend_word(char *argument)
 		return NULL;
 	}
 	return NULL;
-}
-
-int main(void)
-{
-	char **word_list = call_recommend_word("안");
-	for (int i = 0; i < NUM_WORD; i++)
-		printf("%s\n", word_list[i]);
-	return 0;
 }

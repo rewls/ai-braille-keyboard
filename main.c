@@ -14,7 +14,7 @@
 #define SW3 12
 #define SW4 0
 #define SW5 2
-#define SW6 3
+#define SW6 22
 #define sw_send 21
 #define RECOMMEND 16
 #define debounce_time 200
@@ -28,7 +28,7 @@ volatile int lastInterruptTime = 0;
 void callback_func1(void)
 {
 	int i = 0;
-	int pin;
+	int pin = 0;
 
 	int interruptTime = millis();
 
@@ -76,13 +76,16 @@ void callback_func2(void)
 	}
 }
 
-void call_recommend_word(void)
+void callback_recommend_word(void)
 {
 	int interruptTime = millis();
 	if (interruptTime - lastInterruptTime > debounce_time) {
 		char **word_list = call_recommend_word("안");
-		for (int i = 0; i < NUM_WORD; i++)
+		for (int i = 0; i < NUM_WORD; i++) {
 			printf("%s\n", word_list[i]);
+			free(word_list[i]);
+		}
+		free(word_list);
 	}
 }
 
@@ -110,6 +113,7 @@ int main(void)
 	wiringPiISR(SW5, INT_EDGE_FALLING, &callback_func1);
 	wiringPiISR(SW6, INT_EDGE_FALLING, &callback_func1);
 	wiringPiISR(sw_send, INT_EDGE_FALLING, &callback_func2);
+	wiringPiISR(RECOMMEND, INT_EDGE_FALLING, &callback_recommend_word);
 
 	while (1)
 		delay(200);

@@ -103,9 +103,6 @@ int main(void)
 		return 1;
 	}
 
-	if (!Py_IsInitialized())
-		Py_Initialize();
-
 	pinMode(SW1, INPUT);
 	pinMode(SW2, INPUT);
 	pinMode(SW3, INPUT);
@@ -126,9 +123,6 @@ int main(void)
 
 	while (1)
 		delay(200);
-
-	if (Py_IsInitialized())
-		Py_FinalizeEx();
 
 	return 0;
 }

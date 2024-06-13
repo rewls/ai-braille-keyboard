@@ -76,8 +76,11 @@ void callback_func2(void)
 		{
 			list[i] = 0;
 		}
-		if (braille == 0)
-			printf("correct word : %s\n", call_correct_spelling(word));
+		if (braille == 0) {
+			char corrected_word[MAX_LEN];
+			call_correct_spelling(word, corrected_word);
+			printf("correct word : %s\n", corrected_word);
+		}
 
 		delay(200);
 	}
@@ -102,6 +105,8 @@ int main(void)
 		printf("failed\n");
 		return 1;
 	}
+
+	setenv("PYTHONPATH", "library", 1);
 
 	pinMode(SW1, INPUT);
 	pinMode(SW2, INPUT);

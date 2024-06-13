@@ -4,7 +4,7 @@
 #define NUM_WORD 3
 #define MAX_LEN 100
 
-char **call_recommend_word(char *argument);
-char *call_correct_spelling(wchar_t *argument);
+void call_recommend_word(char *phrase, char word_list[][100]);
+void call_correct_spelling(char *word, char *corrected_word);
 
 #endif

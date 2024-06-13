@@ -1,150 +1,84 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include "call-python.h"
 
-char **call_recommend_word(char *argument)
+void call_recommend_word(char *phrase, char word_list[][100])
 {
-	char *pythonfile = "word_recommendation";
-	char *funcname = "recommend_word";
-	PyObject *pName, *pModule, *pFunc;
-	PyObject *pArgs, *pValue;
-	char **word_list;
-	int i;
+	int fildes[2];
+	pipe(fildes);
 
-	word_list = malloc(NUM_WORD * sizeof(char *));
-	for (i = 0; i < NUM_WORD; i++)
-		word_list[i] = malloc(MAX_LEN);
+	if (!Py_IsInitialized())
+		Py_Initialize();
 
-	Py_Initialize();
-	pName = PyUnicode_FromString(pythonfile);
-	/* Error checking of pName left out */
-
-	pModule = PyImport_Import(pName);
-	Py_DECREF(pName);
-
-	if (pModule != NULL) {
-		pFunc = PyObject_GetAttrString(pModule, funcname);
-		/* pFunc is a new reference */
-
-		if (pFunc && PyCallable_Check(pFunc)) {
-			pArgs = PyTuple_New(1);
-			for (i = 0; i < 1; ++i) {
-
-				pValue = PyUnicode_FromString(argument);
-				if (!pValue) {
-					Py_DECREF(pArgs);
-					Py_DECREF(pModule);
-					fprintf(stderr, "Cannot convert argument\n");
-					return NULL;
-				}
-				/* pValue reference stolen here: */
-				PyTuple_SetItem(pArgs, i, pValue);
-			}
-			pValue = PyObject_CallObject(pFunc, pArgs);
-			Py_DECREF(pArgs);
-			if (pValue != NULL) {
-				PyObject *pWord;
-				for (i = 0; i < NUM_WORD; i++) {
-					pWord = PyList_GetItem(pValue, i);
-					strcpy(word_list[i], PyUnicode_AsUTF8(pWord));
-					Py_DECREF(pValue);
-					Py_DECREF(pWord);
-				}
-				return word_list;
-			}
-			else {
-				Py_DECREF(pFunc);
-				Py_DECREF(pModule);
-				PyErr_Print();
-				fprintf(stderr,"Call failed\n");
-				return NULL;
-			}
-		}
-		else {
-			if (PyErr_Occurred())
-				PyErr_Print();
-			fprintf(stderr, "Cannot find function \"%s\"\n", funcname);
-		}
-		Py_XDECREF(pFunc);
-		Py_DECREF(pModule);
+	switch (fork()) {
+	case -1:
+		break;
+	case 0:
+		char script[MAX_LEN];
+		close(fildes[0]);
+		dup2(fildes[1], STDOUT_FILENO);
+		PyRun_SimpleString("import word_recommendation as wr");
+		sprintf(script, "print(','.join(wr.recommend_word('%s')))",
+				phrase);
+		PyRun_SimpleString(script);
+		close(fildes[1]);
+		exit(EXIT_SUCCESS);
 	}
-	else {
-		PyErr_Print();
-		fprintf(stderr, "Failed to load \"%s\"\n", pythonfile);
-		return NULL;
+
+	int nbytes, j;
+	char buf[MAX_LEN], *str1, *token, *saveptr1;
+
+	close(fildes[1]);
+	nbytes = read(fildes[0], buf, MAX_LEN);
+	buf[nbytes] = '\0';
+
+	for (j = 0, str1 = buf; ; j++, str1 = NULL) {
+		token = strtok_r(str1, ",", &saveptr1);
+		if (token == NULL)
+			break;
+		strcpy(word_list[j], token);
 	}
-	if (Py_FinalizeEx() < 0) {
-		return NULL;
-	}
-	return NULL;
+	close(fildes[0]);
+
+	if (Py_IsInitialized())
+		Py_FinalizeEx();
 }
 
-char *call_correct_spelling(wchar_t *argument)
+void call_correct_spelling(char *word, char *corrected_word)
 {
-	char *pythonfile = "spell_suggestion";
-	char *funcname = "correct_spelling";
-	PyObject *pName, *pModule, *pFunc;
-	PyObject *pArgs, *pValue;
-	char *word;
-	int i;
+	int fildes[2];
+	pipe(fildes);
 
-	word = malloc(MAX_LEN);
+	if (!Py_IsInitialized())
+		Py_Initialize();
 
-	Py_Initialize();
-	pName = PyUnicode_FromString(pythonfile);
-	/* Error checking of pName left out */
-
-	pModule = PyImport_Import(pName);
-	Py_DECREF(pName);
-
-	if (pModule != NULL) {
-		pFunc = PyObject_GetAttrString(pModule, funcname);
-		/* pFunc is a new reference */
-
-		if (pFunc && PyCallable_Check(pFunc)) {
-			pArgs = PyTuple_New(1);
-			for (i = 0; i < 1; ++i) {
-
-				pValue = PyUnicode_FromWideChar(argument, -1);
-				if (!pValue) {
-					Py_DECREF(pArgs);
-					Py_DECREF(pModule);
-					fprintf(stderr, "Cannot convert argument\n");
-					return NULL;
-				}
-				/* pValue reference stolen here: */
-				PyTuple_SetItem(pArgs, i, pValue);
-			}
-			pValue = PyObject_CallObject(pFunc, pArgs);
-			Py_DECREF(pArgs);
-			if (pValue != NULL) {
-				word = PyUnicode_AsUTF8(pValue);
-				return word;
-			}
-			else {
-				Py_DECREF(pFunc);
-				Py_DECREF(pModule);
-				PyErr_Print();
-				fprintf(stderr,"Call failed\n");
-				return NULL;
-			}
-		}
-		else {
-			if (PyErr_Occurred())
-				PyErr_Print();
-			fprintf(stderr, "Cannot find function \"%s\"\n", funcname);
-		}
-		Py_XDECREF(pFunc);
-		Py_DECREF(pModule);
+	switch (fork()) {
+	case -1:
+		break;
+	case 0:
+		char script[MAX_LEN];
+		close(fildes[0]);
+		dup2(fildes[1], STDOUT_FILENO);
+		PyRun_SimpleString("import spell_correction as sc");
+		sprintf(script, "print(sc.correct_spelling('%s')))", word);
+		PyRun_SimpleString(script);
+		close(fildes[1]);
+		exit(EXIT_SUCCESS);
 	}
-	else {
-		PyErr_Print();
-		fprintf(stderr, "Failed to load \"%s\"\n", pythonfile);
-		return NULL;
-	}
-	if (Py_FinalizeEx() < 0) {
-		return NULL;
-	}
-	return NULL;
+
+	int nbytes;
+	char buf[MAX_LEN];
+
+	close(fildes[1]);
+	nbytes = read(fildes[0], buf, MAX_LEN);
+	buf[nbytes] = '\0';
+	strcpy(corrected_word, buf);
+	close(fildes[0]);
+
+	if (Py_IsInitialized())
+		Py_FinalizeEx();
 }
-

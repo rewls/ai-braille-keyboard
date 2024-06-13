@@ -71,7 +71,7 @@ void callback_func2(void)
 		}
 		printf("send word : %d\n", braille);
 		b2k(braille,buf,word);
-		
+
 		for (i = 0; i < 6; i++)
 		{
 			list[i] = 0;
@@ -86,18 +86,11 @@ void callback_func2(void)
 void callback_recommend_word(void)
 {
 	int interruptTime = millis();
-	if (interruptTime - lastInterruptTime > debounce_time) 
-	{
-		
-		lastInterruptTime = interruptTime;
-		printf("recommend...\n");
-		char **word_list = call_recommend_word("안");
-		for (int i = 0; i < NUM_WORD; i++) {
+	if (interruptTime - lastInterruptTime > debounce_time) {
+		char word_list[NUM_WORD][MAX_LEN];
+		call_recommend_word(buf, word_list);
+		for (int i = 0; i < NUM_WORD; i++)
 			printf("%s\n", word_list[i]);
-			free(word_list[i]);
-		}
-		free(word_list);
-
 		delay(100);
 	}
 }
@@ -109,6 +102,9 @@ int main(void)
 		printf("failed\n");
 		return 1;
 	}
+
+	if (!Py_IsInitialized())
+		Py_Initialize();
 
 	pinMode(SW1, INPUT);
 	pinMode(SW2, INPUT);
@@ -130,6 +126,9 @@ int main(void)
 
 	while (1)
 		delay(200);
+
+	if (Py_IsInitialized())
+		Py_FinalizeEx();
 
 	return 0;
 }

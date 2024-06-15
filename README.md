@@ -8,10 +8,11 @@
 $ python -m venv .venv
 $ source .venv/bin/activate
 $ export GOOGLE_API_KEY=<google-api-key>
-$ python -m pip install google-generativeai
+$ python -m pip install langchain langchain-chroma langchain-google-genai \
+    langchainhub pillow
 ```
 
-## 오타 교정
+### 오타 교정
 
 ```shell
 $ python -m pip install pandas hangul-utils

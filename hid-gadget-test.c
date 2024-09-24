@@ -1,4 +1,4 @@
-/* hid_gadget_test */
+/* hid-gadget-test */
 
 #include <pthread.h>
 #include <string.h>

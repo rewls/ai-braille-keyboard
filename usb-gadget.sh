@@ -30,4 +30,4 @@ echo -ne "\x05\x01\x09\x06\xa1\x01\x05\x07\x19\xe0\x29\xe7\x15\x00\x25\x01\x75\x
 
 ln -s functions/hid.usb0 configs/c.1
 
-echo dwc2 > UDC
+echo /sys/class/udc > UDC

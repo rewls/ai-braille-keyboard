@@ -7,4 +7,4 @@ ExecStart=/home/dottodots/ai-braille-keyboard/usb-hid-gadget.sh
 RemainAfterExit=yes
 
 [Install]
-Wantedby=multi-user.target
+WantedBy=multi-user.target

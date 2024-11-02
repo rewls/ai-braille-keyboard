@@ -1,17 +1,16 @@
-#include <fcntl.h>
+#include "report.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <wchar.h>
 
-#define REPORT_BYTE 8
 #define ID(c) ((c) - ('a' - 0x04))
 #define LEFT_CONTROL 0x01
 #define LEFT_SHIFT 0x02
+#define BACKSPACE 0x2A
 
-enum kor_syllable {ini, med, fin};
-
-char initial[][8] = {
+static char initial[][REPORT_BYTE] = {
 	{[2] = ID('r')},			// ᄀ
 	{[0] = LEFT_SHIFT, [2] = ID('r')},	// ᄁ
 	{[2] = ID('s')},			// ᄂ
@@ -33,7 +32,7 @@ char initial[][8] = {
 	{[2] = ID('g')},			// ᄒ
 };
 
-char medial[][8] = {
+static char medial[][REPORT_BYTE] = {
 	{[2] = ID('k')},			// ᅡ
 	{[2] = ID('o')},			// ᅢ
 	{[2] = ID('i')},			// ᅣ
@@ -57,7 +56,7 @@ char medial[][8] = {
 	{[2] = ID('l')},			// ᅵ
 };
 
-char final[][8] = {
+static char final[][REPORT_BYTE] = {
 	{[2] = ID('r')},			// ᆨ
 	{[0] = LEFT_SHIFT, [2] = ID('r')},	// ᆩ
 	{[2] = ID('r'), [3] = ID('t')},		// ᆪ
@@ -87,6 +86,15 @@ char final[][8] = {
 	{[2] = ID('g')},			// ᇂ
 };
 
+static int send_report(int fd, char report[REPORT_BYTE])
+{
+	if (write(fd, report, REPORT_BYTE) != REPORT_BYTE) {
+		perror(__FUNCTION__);
+		return 1;
+	}
+	return 0;
+}
+
 int kor2report(char report[REPORT_BYTE], wchar_t c, enum kor_syllable s)
 {
 	if (s == ini && c >= L'ᄀ' && c <= L'ᄒ')
@@ -96,43 +104,25 @@ int kor2report(char report[REPORT_BYTE], wchar_t c, enum kor_syllable s)
 	else if (s == fin && c >= L'ᆨ' && c <= L'ᇂ')
 		memcpy(report, final[c - L'ᆨ'], REPORT_BYTE);
 	else
-		return -1;
-	return 8;
-}
-
-int send_report(wchar_t c, enum kor_syllable s)
-{
-	char *filename;
-	int fd = 0;
-	char report[8];
-	int to_send = 8;
-
-	filename = "/dev/hidg0";
-	if ((fd = open(filename, O_RDWR, 0666)) == -1) {
-		perror(filename);
 		return 1;
-	}
-	if ((to_send = kor2report(report, c, s)) == -1) {
-		close(fd);
-		return 0;
-	}
-	if (write(fd, report, to_send) != to_send) {
-		perror(filename);
-		return 2;
-	}
-
-	memset(report, 0x0, sizeof(report));
-	if (write(fd, report, to_send) != to_send) {
-		perror(filename);
-		return 6;
-	}
-
-	close(fd);
 	return 0;
 }
 
-int main(void)
+void write_kor(int fd, wchar_t c, enum kor_syllable s)
 {
-	send_report(L'ᄀ', ini);
-	return 0;
+	char report[REPORT_BYTE];
+
+	if (kor2report(report, c, s) != 0)
+		close(fd);
+	send_report(fd, report);
+	memset(report, 0x0, sizeof(report));
+	send_report(fd, report);
+}
+
+void remove_word(int fd)
+{
+	char report[REPORT_BYTE] = {[0] = LEFT_CONTROL, [2] = BACKSPACE};
+	send_report(fd, report);
+	memset(report, 0x0, sizeof(report));
+	send_report(fd, report);
 }

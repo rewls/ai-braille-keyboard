@@ -93,7 +93,7 @@ LETTER br2kor(void)
 	return output;
 }
 
-void send_keycode(int braille, char send_buf[512])
+void send_keycode(int braille)
 {
 	wchar_t send_words[10];
 	cur_br = braille;

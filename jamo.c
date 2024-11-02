@@ -40,22 +40,3 @@ void jamo(wchar_t* wstr, wchar_t* output)
     	output[index] = L'\0'; // null-terminat
 	}
 }
-
-int main() {
-    setlocale(LC_ALL, "");
-
-    char *input = "안녕 하세요";
-    wchar_t wstr[50];
-    wchar_t output[150];   // 분해된 자모를 저장할 배열
-
-    size_t len = ch2wch(input, wstr);
-    jamo(wstr, output);
-
-    wprintf(L"wchar 변환 : %ls\n", wstr);
-    wprintf(L"자모 분해: %S\n", output);    // 결과: ㅇㅏㄴㄴㅕㅇ
-
-    wprintf(L"%lc\n", wstr[0]);
-    wprintf(L"%lc\n", output[0]);
-
-    return 0;
-}

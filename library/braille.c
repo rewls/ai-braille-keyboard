@@ -10,7 +10,7 @@ static int word_cnt = 0;
 static int cjj[] = { -1, -1, 0 };
 static wchar_t cho, jung, jong, ret;
 
-enum kor_syllable {ini, med, fin};
+enum kor_syllable {ini, med, fin, word};
 
 typedef struct
 {
@@ -78,6 +78,7 @@ LETTER br2kor(void)
 	case 4:
 		if ((cur_br == 7 || cur_br == 34) && pre_br == 32) j = 1;		
 		flag_word = 1;
+		output.status = word;
 		break;
 	default:
 		break;

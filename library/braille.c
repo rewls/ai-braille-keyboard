@@ -10,8 +10,17 @@ static int word_cnt = 0;
 static int cjj[] = { -1, -1, 0 };
 static wchar_t cho, jung, jong, ret;
 
-wchar_t br2kor(void)
+enum kor_syllable {ini, med, fin};
+
+typedef struct
 {
+	wchar_t letter;
+	enum kor_syllable status;
+} LETTER;
+
+LETTER br2kor(void)
+{
+	LETTER output;
 	wchar_t kor_table[][2] = { {L' '}, {0x11a8}, {0x11af}, {0x11b8},
 		{0x11ba}, {0x11bd}, {0x11be}, {0xc0ac, L' '},
 		{0x1100,0x1101}, {0x1102}, {0x1103, 0x1104}, {0x110f},
@@ -51,6 +60,7 @@ wchar_t br2kor(void)
 		if (pre_br == 32 && (cur_br == 8 || cur_br == 10 || cur_br == 24 || cur_br == 32 || cur_br == 40)) j = 1;		
 		else j = 0;
 		flag_cho = 1;
+		output.status = ini;
 		break;
 	case 2:
 		if (pre_br == 23 && (cur_br == 28 || cur_br == 39 || cur_br == 15 || cur_br == 13)) j = 1;		
@@ -58,10 +68,12 @@ wchar_t br2kor(void)
 		else if (cur_br == 12 && flag_table[1] == 1) j = 1;		
 		else j = 0;
 		flag_jung = 1;
+		output.status = med;
 		break;
 	case 3:
 		if (pre_br == 63 || pre_br == 56) flag_sol = 1;		
 		flag_jong = 1;
+		output.status = fin;
 		break;
 	case 4:
 		if ((cur_br == 7 || cur_br == 34) && pre_br == 32) j = 1;		
@@ -75,7 +87,9 @@ wchar_t br2kor(void)
 	flag_table[1] = flag_jung;
 	flag_table[2] = flag_jong;
 	flag_table[3] = flag_word;
-	return kor_table[cur_br][j];
+	output.letter = kor_table[cur_br][j];
+	
+	return output;
 }
 
 void b2k(int braille, wchar_t* buf, wchar_t* word)

@@ -97,7 +97,7 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 	setlocale(LC_ALL, "");
 
 	cur_br = braille;
-	ret = br2kor();
+	ret = br2kor().letter;
 	pre_br = cur_br;
 
 	if (flag_table[3] == 1)

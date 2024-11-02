@@ -6,8 +6,8 @@
 #include <string.h>
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include "library/braille.h"
-#include "library/call-python.h"
+#include "braille.h"
+#include "call-python.h"
 
 #define SW1 8
 #define SW2 9
@@ -106,7 +106,7 @@ int main(void)
 		return 1;
 	}
 
-	setenv("PYTHONPATH", "library", 1);
+	//setenv("PYTHONPATH", "..", 1);
 
 	pinMode(SW1, INPUT);
 	pinMode(SW2, INPUT);

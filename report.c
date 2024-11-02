@@ -1,6 +1,8 @@
-#include <wchar.h>
-#include <string.h>
+#include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <wchar.h>
 
 #define REPORT_BYTE 8
 #define ID(c) ((c) - ('a' - 0x04))
@@ -94,21 +96,23 @@ int kor2report(char report[REPORT_BYTE], wchar_t c, enum kor_syllable s)
 	else if (s == fin && c >= L'ᆨ' && c <= L'ᇂ')
 		memcpy(report, final[c - L'ᆨ'], REPORT_BYTE);
 	else
-		return -1
+		return -1;
 	return 8;
 }
 
-int send_report(wchar_t c)
+int send_report(wchar_t c, enum kor_syllable s)
 {
+	char *filename;
 	int fd = 0;
 	char report[8];
 	int to_send = 8;
 
-	if ((fd = open("/dev/hidg0", O_RDWR, 0666)) == -1) {
+	filename = "/dev/hidg0";
+	if ((fd = open(filename, O_RDWR, 0666)) == -1) {
 		perror(filename);
 		return 1;
 	}
-	if (to_send = kor2report(report, L'ᆨ', fin) == -1) {
+	if ((to_send = kor2report(report, c, s)) == -1) {
 		close(fd);
 		return 0;
 	}
@@ -117,9 +121,18 @@ int send_report(wchar_t c)
 		return 2;
 	}
 
-	for (int i = 0; i < 8; i++)
-		printf("%d ", report[i]);
+	memset(report, 0x0, sizeof(report));
+	if (write(fd, report, to_send) != to_send) {
+		perror(filename);
+		return 6;
+	}
 
 	close(fd);
+	return 0;
+}
+
+int main(void)
+{
+	send_report(L'ᄀ', ini);
 	return 0;
 }

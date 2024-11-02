@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <locale.h>
+#include "braille.h"
+#include "report.h"
+#include "jamo.h"
 
 static int pre_br = 0;
 static int cur_br = 0;

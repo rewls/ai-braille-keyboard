@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <wchar.h>
-#include <locale.h>
-#include <stdlib.h>
+#include "jamo.h"
 
 #define HANGUL_START 0xAC00
 #define HANGUL_END 0xD7A3

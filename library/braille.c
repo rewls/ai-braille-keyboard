@@ -93,6 +93,34 @@ LETTER br2kor(void)
 	return output;
 }
 
+void send_keycode(int braille, char send_buf[512])
+{
+	wchar_t send_words[10];
+	cur_br = braille;
+	LETTER output = br2kor();
+	wchar_t letter = output.letter;
+	enum kor_syllable status = output.status;
+
+	if(status = word)
+	{
+		jamo(letter, send_words);
+		for(int i=0; i<wcslen(send_words); i++)
+		{
+			if(send_words[i] >= L'ᄀ' && send_words[i] <= L'ᄒ')
+				status = ini;
+			else if(send_words[i] >= L'ᅡ' && send_words[i] <= L'ᅵ')
+				status = med;
+			else
+				status = fin;
+			write_kor(fd, send_words[i], status);
+		}
+	}
+	else
+	{
+		write_kor(fd, letter, status);
+	}
+}
+
 void b2k(int braille, wchar_t* buf, wchar_t* word)
 {
 	setlocale(LC_ALL, "");

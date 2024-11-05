@@ -95,24 +95,24 @@ static int send_report(int fd, char report[REPORT_BYTE])
 	return 0;
 }
 
-int kor2report(char report[REPORT_BYTE], wchar_t c, enum kor_syllable s)
+int kor2report(char report[REPORT_BYTE], wchar_t c)
 {
-	if (s == ini && c >= L'ᄀ' && c <= L'ᄒ')
+	if (c >= L'ᄀ' && c <= L'ᄒ')
 		memcpy(report, initial[c - L'ᄀ'], REPORT_BYTE);
-	else if (s == med && c >= L'ᅡ' && c <= L'ᅵ')
+	else if (c >= L'ᅡ' && c <= L'ᅵ')
 		memcpy(report, medial[c - L'ᅡ'], REPORT_BYTE);
-	else if (s == fin && c >= L'ᆨ' && c <= L'ᇂ')
+	else if (c >= L'ᆨ' && c <= L'ᇂ')
 		memcpy(report, final[c - L'ᆨ'], REPORT_BYTE);
 	else
 		return 1;
 	return 0;
 }
 
-void write_kor(int fd, wchar_t c, enum kor_syllable s)
+void write_kor(int fd, wchar_t c)
 {
 	char report[REPORT_BYTE];
 
-	if (kor2report(report, c, s) != 0)
+	if (kor2report(report, c) != 0)
 		close(fd);
 	send_report(fd, report);
 	memset(report, 0x0, sizeof(report));

@@ -1,9 +1,12 @@
 [Unit]
 Description=USB HID Gadget Service
+DefaultDependencies=no
+Before=shutdown.target
 
 [Service]
 Type=oneshot
 ExecStart=/home/dottodots/ai-braille-keyboard/usb-hid-gadget.sh
+ExecStop=/home/dottodots/ai-braille-keyboard/usb-hid-gadget-clean.sh
 RemainAfterExit=yes
 
 [Install]

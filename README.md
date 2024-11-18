@@ -33,3 +33,11 @@ change setup.py - install_requires 함수 일부 주석 처리
         "map-async>=1.2.3"
     ]
 ```
+
+### HID Gadget 설정
+
+```sh
+$ sudo cp usb_hid_gadget.service /etc/systemd/system
+$ sudo systemctl start usb_hid_gadget
+$ sudo systemctl enable usb_hid_gadget
+```

@@ -64,8 +64,6 @@ $ sudo systemctl enable usb_hid_gadget
 - `/etc/asound.conf`:
 
     ```
-    ...
-    [all]
     pcm.hifiberry {
         type hw card 0
     }

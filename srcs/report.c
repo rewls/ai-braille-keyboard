@@ -9,6 +9,8 @@
 #define LEFT_CONTROL 0x01
 #define LEFT_SHIFT 0x02
 #define BACKSPACE 0x2A
+#define RIGHT 0x4f
+#define SPACEBAR 0x2c
 
 static char initial[][REPORT_BYTE] = {
 	{[2] = ID('r')},			// ᄀ
@@ -79,7 +81,7 @@ static char final[][REPORT_BYTE] = {
 	{[0] = LEFT_SHIFT, [2] = ID('t')},	// ᆻ
 	{[2] = ID('d')},			// ᆼ
 	{[2] = ID('w')},			// ᆽ
-	{[2] = ID('w')},			// ᆾ
+	{[2] = ID('c')},			// ᆾ
 	{[2] = ID('z')},			// ᆿ
 	{[2] = ID('x')},			// ᇀ
 	{[2] = ID('v')},			// ᇁ
@@ -103,6 +105,11 @@ int kor2report(char report[REPORT_BYTE], wchar_t c)
 		memcpy(report, medial[c - L'ᅡ'], REPORT_BYTE);
 	else if (c >= L'ᆨ' && c <= L'ᇂ')
 		memcpy(report, final[c - L'ᆨ'], REPORT_BYTE);
+	else if (c == L'^')
+	{
+		char temp[REPORT_BYTE] = {[2] = SPACEBAR, [3] = BACKSPACE};
+		memcpy(report, temp, REPORT_BYTE);
+	}
 	else
 		return 1;
 	return 0;
@@ -122,6 +129,23 @@ void write_kor(int fd, wchar_t c)
 void remove_word(int fd)
 {
 	char report[REPORT_BYTE] = {[0] = LEFT_CONTROL, [2] = BACKSPACE};
+	send_report(fd, report);
+	memset(report, 0x0, sizeof(report));
+	send_report(fd, report);
+}
+
+void remove_letter(int fd)
+{
+	char report[REPORT_BYTE] = {[2] = BACKSPACE};
+	send_report(fd, report);
+	memset(report, 0x0, sizeof(report));
+	send_report(fd, report);
+}
+
+
+void write_space(int fd)
+{
+	char report[REPORT_BYTE] = {[2] = SPACEBAR};
 	send_report(fd, report);
 	memset(report, 0x0, sizeof(report));
 	send_report(fd, report);

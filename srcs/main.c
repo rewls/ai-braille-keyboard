@@ -6,8 +6,12 @@
 #include <string.h>
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "braille.h"
 #include "call-python.h"
+#include "report.h"
+#include "jamo.h"
 
 #define SW1 8
 #define SW2 9
@@ -70,7 +74,15 @@ void callback_func2(void)
 			braille += list[i] * pow(2, i);
 		}
 		printf("send word : %d\n", braille);
-		b2k(braille,buf,word);
+		char* filename;
+		int fd = 0;
+		filename = "/dev/hidg0";
+		if((fd = open(filename,O_RDWR, 0666)) == -1)
+		{
+			perror(filename);
+			return 1;
+		}
+		b2k(fd, braille, buf, word);
 
 		for (i = 0; i < 6; i++)
 		{
@@ -125,9 +137,43 @@ int main(void)
 	wiringPiISR(SW6, INT_EDGE_FALLING, &callback_func1);
 	wiringPiISR(sw_send, INT_EDGE_FALLING, &callback_func2);
 	wiringPiISR(RECOMMEND, INT_EDGE_FALLING, &callback_recommend_word);
-
+	
+	char* filename;
+	int fd = 0;
+	filename = "/dev/hidg0";
+	if((fd = open(filename,O_RDWR, 0666)) == -1)
+	{
+		perror(filename);
+		return 1;
+	}
 	while (1)
+	{
+		int br;
+		printf("braille : \n");
+		scanf("%d",&br);
+		if(br == 64)
+		{
+			char word_list[NUM_WORD][MAX_LEN];
+			wchar_t wch_word_list[MAX_LEN];
+			wchar_t jamo_word[MAX_LEN*3];
+			call_recommend_word(buf, word_list);
+			for (int i = 0; i < NUM_WORD; i++)
+				printf("%s\n", word_list[i]);
+			int len = ch2wch(word_list[0], wch_word_list);
+			jamo(wch_word_list, jamo_word);
+			write_space(fd);
+			for(int i=0; i<len+1; i++)
+			{
+				remove_letter(fd);
+			}
+			
+			for(int i=0; i<wcslen(jamo_word); i++)
+			{
+				write_kor(fd, jamo_word);
+			}
+		}
+		b2k(fd, br, buf, word);
 		delay(200);
-
+	}
 	return 0;
 }

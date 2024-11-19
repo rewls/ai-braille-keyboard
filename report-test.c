@@ -13,7 +13,8 @@ int main(void)
 		perror(filename);
 		return 1;
 	}
-	write_kor(fd, L'ᄀ');
+	for (int i = 0; i < 10; i++)
+		write_kor(fd, L'ᅫ');
 	sleep(1);
 	remove_word(fd);
 	close(fd);

@@ -1,17 +1,21 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <locale.h>
+#include <unistd.h>
+#include <string.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <stdlib.h>
+#include "braille.h"
+#include "report.h"
+#include "jamo.h"
 
-static int pre_br = 0;
-static int cur_br = 0;
-static int flag_table[4] = { 0,0,0,0 };
-static int buf_cnt = 0;
-static int word_cnt = 0;
-static int cjj[] = { -1, -1, 0 };
-static wchar_t cho, jung, jong, ret;
 
-wchar_t br2kor(void)
+LETTER br2kor(void)
 {
+	setlocale(LC_ALL,"");
+	LETTER output;
 	wchar_t kor_table[][2] = { {L' '}, {0x11a8}, {0x11af}, {0x11b8},
 		{0x11ba}, {0x11bd}, {0x11be}, {0xc0ac, L' '},
 		{0x1100,0x1101}, {0x1102}, {0x1103, 0x1104}, {0x110f},
@@ -51,6 +55,7 @@ wchar_t br2kor(void)
 		if (pre_br == 32 && (cur_br == 8 || cur_br == 10 || cur_br == 24 || cur_br == 32 || cur_br == 40)) j = 1;		
 		else j = 0;
 		flag_cho = 1;
+		output.status = ini;
 		break;
 	case 2:
 		if (pre_br == 23 && (cur_br == 28 || cur_br == 39 || cur_br == 15 || cur_br == 13)) j = 1;		
@@ -58,14 +63,17 @@ wchar_t br2kor(void)
 		else if (cur_br == 12 && flag_table[1] == 1) j = 1;		
 		else j = 0;
 		flag_jung = 1;
+		output.status = med;
 		break;
 	case 3:
 		if (pre_br == 63 || pre_br == 56) flag_sol = 1;		
 		flag_jong = 1;
+		output.status = fin;
 		break;
 	case 4:
 		if ((cur_br == 7 || cur_br == 34) && pre_br == 32) j = 1;		
 		flag_word = 1;
+		output.status = abbr;
 		break;
 	default:
 		break;
@@ -75,15 +83,39 @@ wchar_t br2kor(void)
 	flag_table[1] = flag_jung;
 	flag_table[2] = flag_jong;
 	flag_table[3] = flag_word;
-	return kor_table[cur_br][j];
+	output.letter = kor_table[cur_br][j];
+	
+	return output;
 }
 
-void b2k(int braille, wchar_t* buf, wchar_t* word)
+
+void send_keycode(int fd, wchar_t* s)
 {
+	wchar_t send_s[200];
+	jamo(s, send_s);
+
+	for(int i=0; i<wcslen(send_s); i++)
+	{
+		write_kor(fd, send_s[i]);
+	}
+}
+
+void charsend(int fd, char* input)
+{
+	wchar_t wstr[50];
+	
+	size_t len = ch2wch(input, wstr);
+	send_keycode(fd, wstr);
+}
+
+void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
+{
+	int send_cnt = 0;
+	wchar_t send_word[10] = L"";
 	setlocale(LC_ALL, "");
 
 	cur_br = braille;
-	ret = br2kor();
+	ret = br2kor().letter;
 	pre_br = cur_br;
 
 	if (flag_table[3] == 1)
@@ -97,6 +129,10 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 		{
 			buf[++buf_cnt] = ret;
 			word[++word_cnt] = ret;
+			send_word[send_cnt++] = cho + 0x1100;
+			send_word[send_cnt++] = jung + 0x1161;
+			if(jong != 0)
+				send_word[send_cnt++] = jong + 0x11a7;
 			cjj[0] = cho;
 			cjj[1] = jung;
 			cjj[2] = jong;
@@ -105,6 +141,9 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 		{
 			buf[buf_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
 			word[word_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
+			send_word[send_cnt++] = jung + 0x1161;
+			if(jong != 0)
+				send_word[send_cnt++] = jong + 0x11a7;
 			cjj[1] = jung;
 			cjj[2] = jong;
 		}
@@ -112,6 +151,7 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 	else if (flag_table[2] == 1)
 	{
 		cjj[2] = ret - 0x11a7;
+		send_word[send_cnt++] = ret;
 		//printf("2\n");
 	}
 	else if (flag_table[1] == 1)
@@ -121,9 +161,11 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 			buf_cnt++;
 			cjj[0] = 0x110b - 0x1100;
 			cjj[2] = 0;
+			send_word[send_cnt++] = 0x110b;
 			//printf("3_2\n");
 		}
 		cjj[1] = ret - 0x1161;
+		send_word[send_cnt++] = ret;
 		//printf("3\n");
 	}
 	else if (flag_table[0] == 1)
@@ -131,12 +173,17 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 		if (buf[buf_cnt] >= 0x1100 && buf[buf_cnt] <= 0x1112)
 		{
 			buf[buf_cnt] = cjj[0] * 21 * 28 + 0xac00;
+			send_word[send_cnt++] = 0x1161;
+			send_word[send_cnt++] = L'^';
 		}
+		if (cjj[2] == 0)
+			send_word[send_cnt++] = L'^';
 		cjj[0] = ret - 0x1100;
 		cjj[1] = -1;
 		cjj[2] = 0;
 		buf[++buf_cnt] = ret;
 		word[++word_cnt] = ret;
+		send_word[send_cnt++] = ret;
 		//printf("4\n");
 	}
 
@@ -150,9 +197,15 @@ void b2k(int braille, wchar_t* buf, wchar_t* word)
 		word[++word_cnt] = '\0';
 		word_cnt = 0;
 		buf[++buf_cnt] = ret;
+		write_space(fd);
+	}
+	send_word[send_cnt] = L'\0';
+
+	for(int i=0; i<wcslen(send_word); i++)
+	{
+		write_kor(fd, send_word[i]);
 	}
 	printf("output : %lc\n", ret);
 	printf("output : %S\n", buf + 1);
 
 }
-

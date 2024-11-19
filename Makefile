@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = $(shell python3-config --cflags --embed) $(includes)
-LDFLAGS = $(shell python3-config --ldflags --embed) -lwiringPi
+CFLAGS = $(shell python3-config --cflags --embed) $(includes) -g
+LDFLAGS = $(shell python3-config --ldflags --embed) -lwiringPi -g
 
 name = main
 src_dir = srcs

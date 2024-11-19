@@ -1,0 +1,25 @@
+05 01 # Usage Page (Generic Desktop),
+09 06 # Usage (Keyboard),
+a1 01 # Collection (Application),
+05 07 #   Usage Page (Keyboard),
+19 e0 #   Usage Minimum (224), ; LeftControl
+29 e1 #   Usage Maximum (225), ; LeftShift
+15 00 #   Logical Minimum (0),
+25 01 #   Logical Maximum (1),
+75 01 #   Report Size (1),
+95 02 #   Report Count (2),
+81 02 #   Input (Data, Variable, Absolute), ; Modifier 2-bit
+75 06 #   Report Size (6),
+95 01 #   Report Count (1),
+81 03 #   Input (Constant), ; Pad
+75 08 #   Report Size (8),
+95 01 #   Report Count (1),
+81 01 #   Input (Constant), ; Reserved byte
+19 04 #   Usage Minimum (4), ; a
+29 2c #   Usage Maximum (44), ; Spacebar
+15 00 #   Logical Minimum (0),
+25 28 #   Logical Maximum (40),
+75 08 #   Report Size (8),
+95 06 #   Report Count (6),
+81 00 #   Input (Data, Array), ; Key arrays (6 bytes)
+c0    # End Collection

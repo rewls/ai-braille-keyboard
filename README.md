@@ -61,4 +61,27 @@ $ sudo systemctl enable usb_hid_gadget
     dtoverlay=i2s-mmap
     ```
 
-```sh
+- `/etc/asound.conf`:
+
+    ```
+    ...
+    [all]
+    pcm.hifiberry {
+        type hw card 0
+    }
+
+    pcm.!default {
+        type plug
+    slave.pcm "dmixer"
+    }
+
+    pcm.dmixer {
+        type dmix
+        ipc_key 1024
+        slave {
+            pcm "hifiberry"
+            channels 2
+        }
+    }
+    ```
+

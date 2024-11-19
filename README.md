@@ -49,3 +49,16 @@ $ sudo cp usb_hid_gadget.service /etc/systemd/system
 $ sudo systemctl start usb_hid_gadget
 $ sudo systemctl enable usb_hid_gadget
 ```
+
+### 음성출력
+- `/boot/firmware/config.txt`:
+
+    ```
+    ...
+    [all]
+    #dtparam=i2s=on
+    dtoverlay=hifiberry-dac
+    dtoverlay=i2s-mmap
+    ```
+
+```sh

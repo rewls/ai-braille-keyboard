@@ -88,26 +88,6 @@ LETTER br2kor(void)
 	return output;
 }
 
-
-void send_keycode(int fd, wchar_t* s)
-{
-	wchar_t send_s[200];
-	jamo(s, send_s);
-
-	for(int i=0; i<wcslen(send_s); i++)
-	{
-		write_kor(fd, send_s[i]);
-	}
-}
-
-void charsend(int fd, char* input)
-{
-	wchar_t wstr[50];
-	
-	size_t len = ch2wch(input, wstr);
-	send_keycode(fd, wstr);
-}
-
 void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
 {
 	int send_cnt = 0;
@@ -129,10 +109,10 @@ void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
 		{
 			buf[++buf_cnt] = ret;
 			word[++word_cnt] = ret;
-			send_word[send_cnt++] = cho + 0x1100;
-			send_word[send_cnt++] = jung + 0x1161;
+			write_kor(fd, cho + 0x1100);
+			write_kor(fd, jung + 0x1161);
 			if(jong != 0)
-				send_word[send_cnt++] = jong + 0x11a7;
+				write_kor(fd, jong + 0x11a7);
 			cjj[0] = cho;
 			cjj[1] = jung;
 			cjj[2] = jong;
@@ -141,9 +121,9 @@ void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
 		{
 			buf[buf_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
 			word[word_cnt] = cjj[0] * 21 * 28 + cjj[1] * 28 + cjj[2] + 0xac00;
-			send_word[send_cnt++] = jung + 0x1161;
+			write_kor(fd, jung + 0x1161);
 			if(jong != 0)
-				send_word[send_cnt++] = jong + 0x11a7;
+				write_kor(fd, jong + 0x11a7);
 			cjj[1] = jung;
 			cjj[2] = jong;
 		}
@@ -151,21 +131,24 @@ void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
 	else if (flag_table[2] == 1)
 	{
 		cjj[2] = ret - 0x11a7;
-		send_word[send_cnt++] = ret;
+		write_kor(fd, ret);
 		//printf("2\n");
 	}
 	else if (flag_table[1] == 1)
 	{
 		if (!(buf[buf_cnt] >= 0x1100 && buf[buf_cnt] <= 0x11FF))
 		{
-			buf_cnt++;
+			if(buf_cnt)
+				buf_cnt++;
+			if(word_cnt)
+				word_cnt++;
 			cjj[0] = 0x110b - 0x1100;
 			cjj[2] = 0;
-			send_word[send_cnt++] = 0x110b;
+			write_kor(fd, 0x110b);
 			//printf("3_2\n");
 		}
 		cjj[1] = ret - 0x1161;
-		send_word[send_cnt++] = ret;
+		write_kor(fd, ret);
 		//printf("3\n");
 	}
 	else if (flag_table[0] == 1)
@@ -173,17 +156,21 @@ void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
 		if (buf[buf_cnt] >= 0x1100 && buf[buf_cnt] <= 0x1112)
 		{
 			buf[buf_cnt] = cjj[0] * 21 * 28 + 0xac00;
-			send_word[send_cnt++] = 0x1161;
-			send_word[send_cnt++] = L'^';
+			write_kor(fd, 0x1161);
+			write_space(fd);
+			remove_letter(fd);
 		}
 		if (cjj[2] == 0)
-			send_word[send_cnt++] = L'^';
+		{
+			write_space(fd);
+			remove_letter(fd);
+		}
 		cjj[0] = ret - 0x1100;
 		cjj[1] = -1;
 		cjj[2] = 0;
 		buf[++buf_cnt] = ret;
 		word[++word_cnt] = ret;
-		send_word[send_cnt++] = ret;
+		write_kor(fd, ret);
 		//printf("4\n");
 	}
 
@@ -192,20 +179,20 @@ void b2k(int fd, int braille, wchar_t* buf, wchar_t* word)
 		word[word_cnt] = buf[buf_cnt];
 	}
 	
+	word[word_cnt + 1] = L'\0';
+
 	if (braille == 0)
 	{	
-		word[++word_cnt] = '\0';
 		word_cnt = 0;
 		buf[++buf_cnt] = ret;
 		write_space(fd);
 	}
-	send_word[send_cnt] = L'\0';
-
-	for(int i=0; i<wcslen(send_word); i++)
+	/*for(int i=0; i<wcslen(send_word); i++)
 	{
 		write_kor(fd, send_word[i]);
 	}
+	*/
 	printf("output : %lc\n", ret);
-	printf("output : %S\n", buf + 1);
-
+	printf("output : %S\n", buf);
+	printf("word_cnt = %d\n",word_cnt);
 }

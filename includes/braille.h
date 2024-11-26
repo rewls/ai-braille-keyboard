@@ -28,7 +28,5 @@ typedef struct
 
 LETTER br2kor(void);
 void b2k(int fd, int braille, wchar_t *buf, wchar_t *word);
-void send_keycode(int fd, wchar_t* s);
-void charsend(int fd, char* input);
 
 #endif

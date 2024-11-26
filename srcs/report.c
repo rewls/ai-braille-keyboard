@@ -11,6 +11,7 @@
 #define BACKSPACE 0x2A
 #define RIGHT 0x4f
 #define SPACEBAR 0x2c
+#define ENTER 0x28
 
 static char initial[][REPORT_BYTE] = {
 	{[2] = ID('r')},			// ᄀ
@@ -146,6 +147,14 @@ void remove_letter(int fd)
 void write_space(int fd)
 {
 	char report[REPORT_BYTE] = {[2] = SPACEBAR};
+	send_report(fd, report);
+	memset(report, 0x0, sizeof(report));
+	send_report(fd, report);
+}
+
+void write_enter(int fd)
+{
+	char report[REPORT_BYTE] = {[2] = ENTER};
 	send_report(fd, report);
 	memset(report, 0x0, sizeof(report));
 	send_report(fd, report);

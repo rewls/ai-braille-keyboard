@@ -10,4 +10,5 @@ void write_kor(int fd, wchar_t c);
 void remove_word(int fd);
 void remove_letter(int fd);
 void write_space(int fd);
+void write_enter(int fd);
 #endif

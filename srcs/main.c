@@ -1,5 +1,7 @@
-#include <stdio.h>
 #include <wiringPi.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdbool.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -7,173 +9,212 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include "braille.h"
 #include "call-python.h"
 #include "report.h"
 #include "jamo.h"
 
-#define SW1 8
-#define SW2 9
-#define SW3 12
-#define SW4 0
-#define SW5 2
-#define SW6 22
-#define sw_send 23
-#define RECOMMEND 16
-#define debounce_time 200
+#define NUM_INPUTS 3
+#define NUM_OUTPUTS 4
+#define NUM_KEYS 9
+#define REC_INPUT_SW 7
+#define REC_OUTPUT_SW 1
 
-int list[6] = { 0, };
-void callback_func1(void);
-void callback_func2(void);
+wchar_t buf[1000] = L"";
+wchar_t word[1000] = L"";
 
-volatile int lastInterruptTime = 0;
-static wchar_t buf[1000] = L"";
-static wchar_t word[1000] = L"";
+// 입력 핀 및 출력 핀 정의
+int input_pins[NUM_INPUTS] = {0, 2, 3};       // input 1, input 2, input 3 (WiringPi 기준)
+int output_pins[NUM_OUTPUTS] = {4, 5, 10, 11}; // output 1, output 2, output 3, output 4 (WiringPi 기준)
 
-void callback_func1(void)
+// 각 키의 상태를 저장하는 배열 (KEY1 ~ KEY9)
+bool key_states[NUM_KEYS] = {false, false, false, false, false, false, false, false, false};  
+
+void send_corrected_word(int fd)
 {
-	int i = 0;
-	int pin = 0;
+    char corrected_word[MAX_LEN];
+    wchar_t wch_word_list[MAX_LEN];
+    wchar_t jamo_word[MAX_LEN*3];
 
-	int interruptTime = millis();
+    call_correct_spelling(word, corrected_word);
+    printf("corrected word : %s\n", corrected_word);
 
-	if (interruptTime - lastInterruptTime > debounce_time)
-	{
-		lastInterruptTime = interruptTime;
-		if (digitalRead(SW1) == 0) pin = 0;
-		else if (digitalRead(SW2) == 0) pin = 1;
-		else if (digitalRead(SW3) == 0) pin = 2;
-		else if (digitalRead(SW4) == 0) pin = 3;
-		else if (digitalRead(SW5) == 0) pin = 4;
-		else if (digitalRead(SW6) == 0) pin = 5;
-
-		list[pin] = !(list[pin]);
-		printf("button pressed : { ");
-		for (i = 0; i < 6; i++)
-		{
-			printf("%d ", list[i]);
-		}
-		printf("}\n");
-		delay(100);
-	}
+    int len = ch2wch(corrected_word, wch_word_list);
+    jamo(wch_word_list, jamo_word);
+    for(int i=0; i<wcslen(word)+1; i++)
+    {
+        remove_letter(fd);
+    }
+    
+    for(int i=0; i<wcslen(jamo_word); i++)
+    {
+        write_kor(fd, jamo_word[i]);
+    }
+    write_space(fd);
 }
 
-void callback_func2(void)
+void send_rec_word(int fd)
 {
-	int interruptTime = millis();
-	int braille = 0;
-	int i = 0;
+    char word_list[NUM_WORD][MAX_LEN] = {"안녕하세요", "안녕하니", "안녕하지"};
+    wchar_t wch_word_list[MAX_LEN];
+    wchar_t jamo_word[MAX_LEN*3];
 
-	if (interruptTime - lastInterruptTime > debounce_time)
-	{
-		lastInterruptTime = interruptTime;
+    /*
+    call_recommend_word(buf, word_list);
+    for (int i = 0; i < NUM_WORD; i++)
+        printf("%s\n", word_list[i]);
+    */
+    int select = -1;
+    while(select == -1)
+    {
+        digitalWrite(input_pins[0], HIGH);
+        digitalWrite(input_pins[1], LOW);
+        digitalWrite(input_pins[2], LOW);
 
-		for (i = 0; i < 6; i++)
-		{
-			braille += list[i] * pow(2, i);
-		}
-		printf("send word : %d\n", braille);
-		char* filename;
-		int fd = 0;
-		filename = "/dev/hidg0";
-		if((fd = open(filename,O_RDWR, 0666)) == -1)
-		{
-			perror(filename);
-			return 1;
-		}
-		b2k(fd, braille, buf, word);
+        if(digitalRead(output_pins[0]))
+            select = 0;
+        else if(digitalRead(output_pins[1]))
+            select = 1;
+        else if(digitalRead(output_pins[2]))
+            select = 2;  
+        
+        usleep(100 * 10);
+    }
+    digitalWrite(input_pins[0], LOW);
 
-		for (i = 0; i < 6; i++)
-		{
-			list[i] = 0;
-		}
-		if (braille == 0) {
-			char corrected_word[MAX_LEN];
-			call_correct_spelling(word, corrected_word);
-			printf("correct word : %s\n", corrected_word);
-		}
+    int len = ch2wch(word_list[select], wch_word_list);
+    jamo(wch_word_list, jamo_word);
+    write_space(fd);
+    for(int i=0; i<wcslen(word)+1; i++)
+    {
+        remove_letter(fd);
+    }
+    
+    for(int i=0; i<wcslen(jamo_word); i++)
+    {
+        write_kor(fd, jamo_word[i]);
+    }
 
-		delay(200);
-	}
+    memcpy(word, wch_word_list, sizeof(wchar_t)*(wcslen(wch_word_list)+1));
+    word_cnt = wcslen(word) - 1;
+}
+// 특정 입력/출력 핀 조합에 따라 key_states 배열의 해당 키 상태를 토글하는 함수
+void toggleKey(int fd, int input_idx, int output_idx) {
+    int key_index = -1;
+
+    // 입력/출력 핀 조합에 따라 key_index 설정
+    if (input_idx == 0 && output_idx == 0) key_index = 0;  // KEY 1
+    else if (input_idx == 0 && output_idx == 1) key_index = 1;  // KEY 2
+    else if (input_idx == 0 && output_idx == 2) key_index = 2;  // KEY 3
+    else if (input_idx == 1 && output_idx == 0) key_index = 3;  // KEY 4
+    else if (input_idx == 1 && output_idx == 1) key_index = 4;  // KEY 5
+    else if (input_idx == 1 && output_idx == 2) key_index = 5;  // KEY 6
+    else if (input_idx == 2 && output_idx == 3) key_index = 6;  // KEY 7
+    else if (input_idx == 0 && output_idx == 3) key_index = 7;  // KEY 8
+    else if (input_idx == 1 && output_idx == 3) key_index = 8;  // KEY 9
+    
+    if (key_index != -1) {
+        key_states[key_index] = !key_states[key_index];
+        printf("키 %d 상태가 변경되었습니다: ", key_index + 1);
+        for (int i = 0; i < NUM_KEYS; i++) {
+            printf("%d ", key_states[i]);
+        }
+        printf("\n");
+
+        if(key_index == 8)
+        {
+            int braille = 0;
+            for (int i = 0; i < 6; i++)
+            {
+                braille += (int)key_states[i] * pow(2, i);
+            }
+            printf("braille : %d\n", braille);
+            b2k(fd, braille, buf, word);
+            for (int i = 0; i < 6; i++)
+            {
+                key_states[i] = false;
+            }
+            if (braille == 0) 
+            {
+                send_corrected_word(fd);
+		    }
+        }
+        if(key_index == 7)
+        {
+            write_enter(fd);
+            /*
+            */
+        }
+        if(key_index == 6)
+        {
+            remove_letter(fd);
+        }
+    }
 }
 
-void callback_recommend_word(void)
-{
-	int interruptTime = millis();
-	if (interruptTime - lastInterruptTime > debounce_time) {
-		char word_list[NUM_WORD][MAX_LEN];
-		call_recommend_word(buf, word_list);
-		for (int i = 0; i < NUM_WORD; i++)
-			printf("%s\n", word_list[i]);
-		delay(100);
-	}
+void setup() {
+    for (int i = 0; i < NUM_INPUTS; i++) {
+        pinMode(input_pins[i], OUTPUT);
+        digitalWrite(input_pins[i], LOW);
+    }
+
+    for (int j = 0; j < NUM_OUTPUTS; j++) {
+        pinMode(output_pins[j], INPUT);
+        pullUpDnControl(output_pins[j], PUD_DOWN);  // 풀다운 저항 설정
+    }
+
+    pinMode(REC_INPUT_SW, OUTPUT);
+    digitalWrite(REC_INPUT_SW, HIGH);
+
+    pinMode(REC_OUTPUT_SW, INPUT);
+    pullUpDnControl(REC_OUTPUT_SW, PUD_DOWN);
 }
 
-int main(void)
-{
-	if (wiringPiSetup() == -1)
-	{
-		printf("failed\n");
-		return 1;
-	}
 
-	//setenv("PYTHONPATH", "..", 1);
+void scanKeys(int fd) {
+    for (int i = 0; i < NUM_INPUTS; i++) {
+        for (int k = 0; k < NUM_INPUTS; k++) {
+            digitalWrite(input_pins[k], (k == i) ? HIGH : LOW);
+        }
+        usleep(100);  
 
-	pinMode(SW1, INPUT);
-	pinMode(SW2, INPUT);
-	pinMode(SW3, INPUT);
-	pinMode(SW4, INPUT);
-	pinMode(SW5, INPUT);
-	pinMode(SW6, INPUT);
-	pinMode(sw_send, INPUT);
+        for (int j = 0; j < NUM_OUTPUTS; j++) {
+            if (digitalRead(output_pins[j]) == HIGH) {  
+                toggleKey(fd, i, j);  
+                usleep(100 * 2000);  
+            }
+        }
+        if(digitalRead(REC_OUTPUT_SW) == HIGH)
+        {
+            send_rec_word(fd);
+            usleep(100 * 2000);
+        }
+    }
+}
 
+int main() {
+    if (wiringPiSetup() == -1) {
+        printf("wiringPi 초기화 실패!\n");
+        return 1;
+    }
 
-	wiringPiISR(SW1, INT_EDGE_FALLING, &callback_func1);
-	wiringPiISR(SW2, INT_EDGE_FALLING, &callback_func1);
-	wiringPiISR(SW3, INT_EDGE_FALLING, &callback_func1);
-	wiringPiISR(SW4, INT_EDGE_FALLING, &callback_func1);
-	wiringPiISR(SW5, INT_EDGE_FALLING, &callback_func1);
-	wiringPiISR(SW6, INT_EDGE_FALLING, &callback_func1);
-	wiringPiISR(sw_send, INT_EDGE_FALLING, &callback_func2);
-	wiringPiISR(RECOMMEND, INT_EDGE_FALLING, &callback_recommend_word);
-	
-	char* filename;
-	int fd = 0;
+    setup(); 
+
+    printf("점자 키보드 입력 상태 확인을 시작합니다...\n");
+
+    char* filename;
+	int fd;
 	filename = "/dev/hidg0";
 	if((fd = open(filename,O_RDWR, 0666)) == -1)
 	{
 		perror(filename);
 		return 1;
 	}
-	while (1)
-	{
-		int br;
-		printf("braille : \n");
-		scanf("%d",&br);
-		if(br == 64)
-		{
-			char word_list[NUM_WORD][MAX_LEN];
-			wchar_t wch_word_list[MAX_LEN];
-			wchar_t jamo_word[MAX_LEN*3];
-			call_recommend_word(buf, word_list);
-			for (int i = 0; i < NUM_WORD; i++)
-				printf("%s\n", word_list[i]);
-			int len = ch2wch(word_list[0], wch_word_list);
-			jamo(wch_word_list, jamo_word);
-			write_space(fd);
-			for(int i=0; i<len+1; i++)
-			{
-				remove_letter(fd);
-			}
-			
-			for(int i=0; i<wcslen(jamo_word); i++)
-			{
-				write_kor(fd, jamo_word);
-			}
-		}
-		b2k(fd, br, buf, word);
-		delay(200);
-	}
-	return 0;
+
+    printf("준비완료...\n");
+    while (1) {
+        scanKeys(fd); 
+    }
+
+    return 0;
 }

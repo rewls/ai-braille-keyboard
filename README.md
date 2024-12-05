@@ -24,10 +24,7 @@ $ pip install pandas numpy symspellpy hangul-utils
   
 ```
 $ wget https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/ko/ko_50k.txt -O ko_50k.txt
-
 ```
-
-주석 처리
 
 
 ### HID Gadget 설정

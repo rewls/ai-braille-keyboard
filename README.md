@@ -15,24 +15,18 @@ $ python -m pip install langchain langchain-chroma langchain-google-genai \
 ### 오타 교정
 
 ```shell
-$ python -m pip install pandas hangul-utils
+$ python -m venv .venv
+$ source .venv/bin/activate
+$ pip install pandas numpy symspellpy hangul-utils
 ```
 
-- 자모 분해를 위한 hangul_utils 설치 시 오류 발생
-- 수동 설치 : https://pypi.org/project/hangul-utils/#description
+- 사전데이터 다운로드
+  
+```
+$ wget https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/ko/ko_50k.txt -O ko_50k.txt
 
-change setup.py - install_requires 함수 일부 주석 처리
-```
- install_requires=[
-        "tqdm",
-        "six",
-        #"jpype1;python_version<='2.7'",
-        "jpype1>=1.2.0",
-        #"jpype1-py3;python_version>='3.5'",
-        #"mecab-python==0.996-ko-0.9.2",
-        "map-async>=1.2.3"
-    ]
-```
+``` 주석 처리
+
 
 ### HID Gadget 설정
 

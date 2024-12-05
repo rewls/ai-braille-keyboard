@@ -32,4 +32,16 @@ def correct_spelling(user_input, input_file="ko_50k.txt", output_file="ko_50k_de
 
     # 결과 반환
     results = join_jamos(best_suggestion.term)
+    audio_msg = f"오타가 감지되었습니다. {results}로 교정하시겠습니까?"
+    print(audio_msg)
+    os.system(f'espeak -v ko "{audio_msg}" --stdout | sox -t wav - -r 48000 -c 2 -t wav - gain -n bass +3 treble +6 | aplay -D hw:0,0')
     return results
+
+# 스크립트 테스트 코드 추후 삭제
+if __name__ == "__main__":
+    user_input = input("오타 교정을 테스트할 단어를 입력하세요: ")
+    result = correct_spelling(user_input)
+    if result:
+        print(f"교정 결과: {result}")
+    else:
+        print("오타가 없거나 제안어를 찾을 수 없습니다.")

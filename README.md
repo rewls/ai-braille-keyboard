@@ -20,7 +20,7 @@ $ source .venv/bin/activate
 $ pip install pandas numpy symspellpy hangul-utils
 ```
 
-사전데이터 다운로드
+- 사전데이터 다운로드
   
 ```
 $ wget https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/ko/ko_50k.txt -O ko_50k.txt

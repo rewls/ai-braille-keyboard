@@ -13,6 +13,8 @@
 
 #define MAX_BUF 1000
 #define MAX_LEN 100
+#define NUM_REC 3
+#define SW_REC 
 
 wchar_t buf[MAX_BUF] = L"";
 wchar_t word[MAX_LEN] = L"";
@@ -21,6 +23,8 @@ int correct_word(int fd, const int *row, const int *col)
 {
 	wchar_t corrected_word[MAX_LEN];
 	int flag;
+	char tmp_ch[MAX_LEN] = L"";
+	wchar_t tmp[MAX_LEN] = L"";
 
 	call_correct_spelling(word, corrected_word);
 #ifdef DEBUG
@@ -53,6 +57,43 @@ int correct_word(int fd, const int *row, const int *col)
 	return 0;
 }
 
+int recommend_word(int fd, const int *row, const int *col)
+{
+	wchar_t recommended_word[NUM_REC][MAX_LEN];
+	int flag;
+
+	call_recommend_word(word, recommend_word);
+#ifdef DEBUG
+	printf("recommended word : %S, %S, %S\n", recommend_word[0],
+			recommend_word[1], recommend_word[2]);
+#endif
+	snprintf(tmp_ch, sizeof(tmp_ch), "1번 %S, 2번 %S, 3번 %S", recommend_word[0],
+			recommend_word[1], recommend_word[2]);
+	ch2wch(tmp_ch, tmp);
+	play_audio(tmp);
+
+	flag = -1;
+	digitalWrite(col[0], HIGH);
+	while (flag == -1) {
+		if (digitalRead(row[0]) == HIGH)
+			flag = 0;
+		else if (digitalRead(row[1]) == HIGH)
+			flag = 1;
+		else if (digitalRead(row[2]) == HIGH)
+			flag = 2;
+		usleep(100 * 10);
+	}
+	digitalWrite(col[0], LOW);
+
+	if (remove_word(fd, wcslen(word)) != 0)
+		return 1;
+	if (write_word(fd, recommend_word[flag]) != 0)
+		return 1;
+	play_audio(recommend_word[flag]);
+	wcscpy(buf + buf_cnt - wcslen(recommend_word[flag]), recommend_word[flag]);
+	return 0;
+}
+
 void print_dot(bool *dot)
 {
 	printf("dot states:");
@@ -66,6 +107,7 @@ int main(void)
 	// WirintPi number
 	const int col[NUM_COL] = {0, 2, 3};
 	const int row[NUM_ROW] = {4, 5, 6, 7};
+	const int sw_rec;
 
 	int fd;
 	int key;
@@ -73,6 +115,7 @@ int main(void)
 	bool dot[NUM_DOT] = {false};
 	char tmp_ch[MAX_LEN] = "";
 	wchar_t tmp[MAX_LEN] = L"";
+	wchar_t recommended_word[NUM_ROW][MAX_LEN];
 
 	if (pin_init(row, col) != 0)
 		return 1;
@@ -115,13 +158,16 @@ int main(void)
 				break;
 			case SEND:
 				braille = get_braille(dot);
-				;
 				play_audio((wchar_t [2]){b2k(fd, braille, buf, word)});
 				memset(dot, 0, NUM_DOT);
 				if (braille == 0) {
 					play_audio(L"공백");
 					correct_word(fd, row, col);
 				}
+				break;
+			case REC:
+				recommend_word(fd, recommended_word);
+				memset(dot, 0, NUM_DOT);
 		}
 	}
 	return 0;

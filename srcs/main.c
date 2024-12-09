@@ -18,31 +18,20 @@
 
 wchar_t buf[MAX_BUF] = L"";
 wchar_t word[MAX_LEN] = L"";
+extern int buf_cnt, word_cnt;
 
-int correct_word(int fd, const int *row, const int *col)
+int correct_word(int fd)
 {
 	wchar_t corrected_word[MAX_LEN];
-	int flag;
-	char tmp_ch[MAX_LEN] = L"";
-	wchar_t tmp[MAX_LEN] = L"";
+	int key;
 
 	call_correct_spelling(word, corrected_word);
 #ifdef DEBUG
 	printf("corrected word : %S\n", corrected_word);
 #endif
 
-	flag = -1;
-	digitalWrite(col[1], HIGH);
-	while (flag == -1) {
-		if (digitalRead(row[3]) == HIGH)
-			flag = 1;
-		else
-			flag = 0;
-		usleep(100 * 10);
-	}
-	digitalWrite(col[1], LOW);
-
-	if (flag == 0)
+	key = scan_key();
+	if (key != ENTER)
 		return 0;
 	if (send_backspace(fd) != 0)
 		return 1;
@@ -52,45 +41,36 @@ int correct_word(int fd, const int *row, const int *col)
 		return 1;
 	if (send_space(fd) != 0)
 		return 1;
-	play_audio(correct_word);
+	play_audio(corrected_word);
 	wcscpy(buf + buf_cnt - wcslen(corrected_word), corrected_word);
+	word_cnt = -1;
 	return 0;
 }
 
-int recommend_word(int fd, const int *row, const int *col)
+int recommend_word(int fd, wchar_t recommended_word[NUM_REC][MAX_LEN])
 {
-	wchar_t recommended_word[NUM_REC][MAX_LEN];
-	int flag;
+	int key;
+	char tmp_ch[MAX_LEN] = "";
+	wchar_t tmp[MAX_LEN] = L"";
 
-	call_recommend_word(word, recommend_word);
+	call_recommend_word(word, recommended_word);
 #ifdef DEBUG
-	printf("recommended word : %S, %S, %S\n", recommend_word[0],
-			recommend_word[1], recommend_word[2]);
+	printf("recommended word : %S, %S, %S\n", recommended_word[0],
+			recommended_word[1], recommended_word[2]);
 #endif
-	snprintf(tmp_ch, sizeof(tmp_ch), "1번 %S, 2번 %S, 3번 %S", recommend_word[0],
-			recommend_word[1], recommend_word[2]);
+	snprintf(tmp_ch, sizeof(tmp_ch), "1번 %S, 2번 %S, 3번 %S", recommended_word[0],
+			recommended_word[1], recommended_word[2]);
 	ch2wch(tmp_ch, tmp);
 	play_audio(tmp);
-
-	flag = -1;
-	digitalWrite(col[0], HIGH);
-	while (flag == -1) {
-		if (digitalRead(row[0]) == HIGH)
-			flag = 0;
-		else if (digitalRead(row[1]) == HIGH)
-			flag = 1;
-		else if (digitalRead(row[2]) == HIGH)
-			flag = 2;
-		usleep(100 * 10);
-	}
-	digitalWrite(col[0], LOW);
-
+	key = scan_key();
+	if (key < DOT1 || key > DOT3)
+		return 0;
 	if (remove_word(fd, wcslen(word)) != 0)
 		return 1;
-	if (write_word(fd, recommend_word[flag]) != 0)
+	if (write_word(fd, recommended_word[key]) != 0)
 		return 1;
-	play_audio(recommend_word[flag]);
-	wcscpy(buf + buf_cnt - wcslen(recommend_word[flag]), recommend_word[flag]);
+	play_audio(recommended_word[key]);
+	wcscpy(buf + buf_cnt - wcslen(recommended_word[key]), recommended_word[key]);
 	return 0;
 }
 
@@ -104,11 +84,6 @@ void print_dot(bool *dot)
 
 int main(void)
 {
-	// WirintPi number
-	const int col[NUM_COL] = {0, 2, 3};
-	const int row[NUM_ROW] = {4, 5, 6, 7};
-	const int sw_rec;
-
 	int fd;
 	int key;
 	int braille;
@@ -117,18 +92,19 @@ int main(void)
 	wchar_t tmp[MAX_LEN] = L"";
 	wchar_t recommended_word[NUM_ROW][MAX_LEN];
 
-	if (pin_init(row, col) != 0)
+	if (pin_init() != 0)
 		return 1;
 	fd = hid_init();
 	if (fd == -1)
 		return 1;
 	setlocale(LC_ALL, "ko_KR.UTF-8");
 	setenv("PYTHONPATH", "srcs", 1);
+	setenv("GOOGLE_API_KEY", "", 1);
 	init_spell_coreprection();
 
 	play_audio(L"안녕하세요");
 	while (1) {
-		key = scan_key(row, col);
+		key = scan_key();
 		switch (key) {
 			case DOT1: case DOT2: case DOT3:
 			case DOT4: case DOT5: case DOT6:
@@ -149,6 +125,8 @@ int main(void)
 				if (send_backspace(fd) != 0)
 					return 1;
 				memset(dot, 0, NUM_DOT);
+				word_cnt--;
+				buf_cnt--;
 				break;
 			case ENTER:
 				play_audio(L"enter");
@@ -162,10 +140,14 @@ int main(void)
 				memset(dot, 0, NUM_DOT);
 				if (braille == 0) {
 					play_audio(L"공백");
-					correct_word(fd, row, col);
+					correct_word(fd);
 				}
 				break;
 			case REC:
+				play_audio(L"단어 추천");
+#ifdef DEBUG
+				printf("단어 추천");
+#endif
 				recommend_word(fd, recommended_word);
 				memset(dot, 0, NUM_DOT);
 		}

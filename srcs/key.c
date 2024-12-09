@@ -4,7 +4,12 @@
 
 #include <wiringPi.h>
 
-int pin_init(const int *row, const int *col)
+// WirintPi number
+const int col[NUM_COL] = {0, 2, 3};
+const int row[NUM_ROW] = {4, 5, 6, 7};
+const int sw_rec = 25;
+
+int pin_init(void)
 {
 	int i;
 
@@ -18,6 +23,8 @@ int pin_init(const int *row, const int *col)
 		pinMode(row[i], INPUT);
 		pullUpDnControl(row[i], PUD_DOWN);
 	}
+	pinMode(sw_rec, INPUT);
+	pullUpDnControl(sw_rec, PUD_DOWN);
 	return 0;
 }
 
@@ -44,7 +51,7 @@ static int get_key(int r, int c)
 	return -1;
 }
 
-enum key_func scan_key(const int *row, const int *col)
+enum key_func scan_key(void)
 {
 	while (1) {
 		for (int i = 0; i < NUM_COL; i++) {
@@ -57,6 +64,8 @@ enum key_func scan_key(const int *row, const int *col)
 				}
 			}
 			digitalWrite(col[i], LOW);
+			if (digitalRead(sw_rec) == HIGH)
+				return REC;
 		}
 	}
 }

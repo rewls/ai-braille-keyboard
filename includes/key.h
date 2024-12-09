@@ -6,10 +6,10 @@
 
 enum key_func {
 	DOT1, DOT2, DOT3, DOT4, DOT5, DOT6, 
-	DELETE, ENTER, SEND
+	DELETE, ENTER, SEND, REC
 };
 
-int pin_init(const int *row, const int *col);
-enum key_func scan_key(const int *row, const int *col);
+int pin_init(void);
+enum key_func scan_key(void);
 
 #endif

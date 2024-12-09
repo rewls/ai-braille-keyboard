@@ -14,7 +14,8 @@
 static int pre_br = 0;
 static int cur_br = 0;
 static int flag_table[4] = {0,0,0,0};
-static int word_cnt = -1;
+int buf_cnt = -1;
+int word_cnt = -1;
 static int cjj[] = {-1,-1,0};
 static wchar_t cho,jung,jong,ret;
 
@@ -98,7 +99,6 @@ wchar_t b2k(int fd, int braille, wchar_t *buf, wchar_t *word)
 {
 	int send_cnt = 0;
 	wchar_t send_word[10] = L"";
-	setlocale(LC_ALL, "");
 
 	cur_br = braille;
 	ret = br2kor().letter;

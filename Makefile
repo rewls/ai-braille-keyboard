@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = $(shell python3-config --cflags --embed) $(includes) -g
+CFLAGS = $(shell python3-config --cflags --embed) $(includes) -g -DDEBUG
 LDFLAGS = $(shell python3-config --ldflags --embed) -lwiringPi -g
 
 name = main

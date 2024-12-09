@@ -10,14 +10,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-static int pre_br = 0;
-static int cur_br = 0;
-static int flag_table[4] = {0,0,0,0};
-static int buf_cnt = 0;
-static int word_cnt = 0;
-static int cjj[] = {-1,-1,0};
-static wchar_t cho,jung,jong,ret;
+#define NUM_DOT 6
 
 enum kor_syllable {ini, med, fin, abbr};
 typedef struct
@@ -27,6 +22,7 @@ typedef struct
 } LETTER;
 
 LETTER br2kor(void);
-void b2k(int fd, int braille, wchar_t *buf, wchar_t *word);
+wchar_t b2k(int fd, int braille, wchar_t *buf, wchar_t *word);
+int get_braille(bool *dot);
 
 #endif

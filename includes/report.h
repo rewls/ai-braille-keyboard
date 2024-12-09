@@ -3,12 +3,13 @@
 
 #include <wchar.h>
 
-#define REPORT_BYTE 8
-
-int kor2report(char report[REPORT_BYTE], wchar_t c);
+int hid_init(void);
 void write_kor(int fd, wchar_t c);
-void remove_word(int fd);
-void remove_letter(int fd);
-void write_space(int fd);
-void write_enter(int fd);
+int write_jamo(int fd, wchar_t c);
+int write_word(int fd, wchar_t *s);
+int remove_word(int fd, int len);
+int send_backspace(int fd);
+int send_space(int fd);
+int send_enter(int fd);
+
 #endif
